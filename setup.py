@@ -7,10 +7,12 @@ PY34_PLUS = sys.version_info[0] == 3 and sys.version_info[1] >= 4
 exclude = ['tourbillon.rabbitmq.rabbitmq2'
            if PY34_PLUS else 'tourbillon.rabbitmq.rabbitmq']
 
-install_requires = ['psutil==3.2.2']
+install_requires = []
 
 if not PY34_PLUS:
     install_requires.append('trollius==2.0')
+else:
+    install_requires.append('aiohttp==0.17.4')
 
 setup(
     name='tourbillon-rabbitmq',

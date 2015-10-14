@@ -1,0 +1,12 @@
+setup.py
+tourbillon/__init__.py
+tourbillon/rabbitmq/__init__.py
+tourbillon/rabbitmq/rabbitmq/__init__.py
+tourbillon/rabbitmq/rabbitmq/rabbitmq.py
+tourbillon_rabbitmq.egg-info/PKG-INFO
+tourbillon_rabbitmq.egg-info/SOURCES.txt
+tourbillon_rabbitmq.egg-info/dependency_links.txt
+tourbillon_rabbitmq.egg-info/namespace_packages.txt
+tourbillon_rabbitmq.egg-info/not-zip-safe
+tourbillon_rabbitmq.egg-info/requires.txt
+tourbillon_rabbitmq.egg-info/top_level.txt
