@@ -3,16 +3,16 @@
 
 -----
 
-# What is tourbillon-elasticsearch
+# What is tourbillon-rabbitmq
 
-tourbillon-elasticsearch is a tourbillon plugin that can collect metrics from an Elasticsearch server or cluster.
+tourbillon-rabbitmq is a tourbillon plugin that can collect metrics from an RabbitMQ server or cluster.
 For more informations about tourbillon please visit the [project page](http://www.github.com/tourbillonpy/tourbillon-agent).
 
 
 # Documentation
 
-You can browse the tourbillon-elasticsearch documentation online, it is hosted on Read The Docs.
-The documentation of the latest version of tourbillon-elasticsearch can be found [here](http://tourbillon-elasticsearch.readthedocs.org/en/latest/).
+You can browse the tourbillon-rabbitmq documentation online, it is hosted on Read The Docs.
+The documentation of the latest version of tourbillon-rabbitmq can be found [here](http://tourbillon-rabbitmq.readthedocs.org/en/latest/).
 
 
 # Contributing
