@@ -109,7 +109,7 @@ def get_rmq_nodes_stats(agent):
                     p = {
                         'measurement': 'rmq_nodes_stats',
                         'tags': {
-                            'hostname': node['name'],
+                            'node': node['name'],
                         },
                         'fields': {
                         }

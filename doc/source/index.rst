@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to the tourbillon-elasticsearch's |release| documentation!
-==================================================================
+Welcome to the tourbillon-rabbitmq's |release| documentation!
+=============================================================
 
 Contents:
 

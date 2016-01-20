@@ -5,9 +5,9 @@ Using tourbillon
 ================
 
 
-To install tourbillon-elasticsearch at a command prompt type: ::
+To install tourbillon-rabbitmq at a command prompt type: ::
 
-	$ sudo -i tourbillon install tourbillon-elasticsearch
+	$ sudo -i tourbillon install tourbillon-rabbitmq
 
 
 
@@ -15,11 +15,11 @@ Using pip
 =========
 
 
-To install tourbillon-elasticsearch using pip enter: ::
+To install tourbillon-rabbitmq using pip enter: ::
 
-	$ pip install tourbillon-elasticsearch
+	$ pip install tourbillon-rabbitmq
 
 .. note::
 	
-	If you have installed tourbillon in a virtualenv you must install tourbillon-elasticsearch in the same virtualenv.
+	If you have installed tourbillon in a virtualenv you must install tourbillon-rabbitmq in the same virtualenv.
 

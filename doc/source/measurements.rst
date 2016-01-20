@@ -1,25 +1,30 @@
 Measurements
 ************
 
-tourbillon-elasticsearch collects metrics about an Elasticsearch cluster and its nodes.
+tourbillon-rabbitmq collects metrics about a RabbitMQ cluster and its nodes.
 
-Please refers to  `https://www.elastic.co/guide/en/elasticsearch/guide/current/_cluster_health.html <https://www.elastic.co/guide/en/elasticsearch/guide/current/_cluster_health.html>`_ and `https://www.elastic.co/guide/en/elasticsearch/guide/current/_monitoring_individual_nodes.html <https://www.elastic.co/guide/en/elasticsearch/guide/current/_monitoring_individual_nodes.html>`_ for more information.
+Please refers to  `https://raw.githack.com/rabbitmq/rabbitmq-management/rabbitmq_v3_6_0/priv/www/api/index.html <https://raw.githack.com/rabbitmq/rabbitmq-management/rabbitmq_v3_6_0/priv/www/api/index.html>`_ for more information.
 
 
-Elasticsearch stats
-===================
+RabbitMQ stats
+==============
 
-tourbillon-elasticsearch store metrics in the ``es_cluster_stats`` and ``es_nodes_stats`` series.
-Each datapoint is tagged with the elasticsearch instance hostname and the values collected are:
+tourbillon-rabbitmq store metrics in the ``rmq_global_stats``,  ``rmq_nodes_stats`` and ``rmq_queues_stats`` series.
+
+Each datapoint is tagged with the rabbitmq instance hostname and the values collected are:
 
 
 Tags
 ----
-	* **host**: elasticsearch instance hostname
+	* **hostname**: rabbitmq instance hostname (only for rmq_global_stats)
+	* **node**: rabbitmq node name (only for rmq_nodes_stats and rmq_queues_stats)
+	* **queue_name**: name of the queue (only for rmq_queues_stats)
+	* **vhost**: name of the rabbitmq virtualhost (only for rmq_queues_stats)
+
 
 Fields
 ------
 .. note::
-	Please refers to the Elasticsearch monitoring documentation to check the list of metrics collected both for cluster and nodes.
+	Please refers to the RabbitMQ documentation to check the list of metrics collected both for cluster, nodes and queues.
 
 
