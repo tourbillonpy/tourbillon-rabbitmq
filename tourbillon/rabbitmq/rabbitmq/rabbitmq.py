@@ -1,210 +1,210 @@
 import asyncio
 import logging
+from urllib import parse as urlparse
+
 import aiohttp
-from aiohttp.helpers import  BasicAuth
+
+
 logger = logging.getLogger(__name__)
 
 
 @asyncio.coroutine
-def get_rabbitmq_queues_stats(agent):
+def get_rmq_global_stats(agent):
     yield from agent.run_event.wait()
+    logger.debug('starting get_rmq_global_stats')
     config = agent.config['rabbitmq']
-    logger.info('starting "get_rabbitmq_queues_stats" task for "%s"',
-                config['hostname'])
+    logger.debug('get_rmq_global_stats config retrieved')
     db_config = config['database']
-    monitored_queues = config['queues'].split(',')
-    auth = BasicAuth(config['username'], config['password'])
     yield from agent.async_create_database(**db_config)
+    base_url = config['base_url']
+    while agent.run_event.is_set():
+        logger.debug('in while loop')
+        try:
+            yield from asyncio.sleep(config['frequency'])
+            points = [{
+                'measurement': 'rmq_global_stats',
+                'tags': {
+                    'hostname': config['host'],
+                },
+                'fields': {
+                }
+            }]
+            global_stats_url = urlparse.urljoin(base_url,
+                                                'api/overview')
+            res = yield from aiohttp.get(global_stats_url)
+            fields = points[0]['fields']
+            if res.status == 200:
+                info = yield from res.json()
+                for k, v in info['object_totals'].items():
+                    field_name = 'object_totals_{}'.format(k)
+                    fields[field_name] = v
+                qt = info['queue_totals']
+                fields['queue_totals_messages'] = qt['messages']
+                fields['queue_totals_messages_rate'] =\
+                    qt['messages_details']['rate']
+                fields['queue_totals_messages_ready'] = qt['messages_ready']
+                fields['queue_totals_messages_ready_rate'] =\
+                    qt['messages_ready_details']['rate']
+                fields['queue_totals_messages_unacknowledged'] =\
+                    qt['messages_unacknowledged']
+                fields['queue_totals_messages_unacknowledged_rate'] =\
+                    qt['messages_unacknowledged_details']['rate']
+
+                mst = info['message_stats']
+                fields['message_stats_ack'] = mst['ack']
+                fields['message_stats_ack_rate'] =\
+                    mst['ack_details']['rate']
+                fields['message_stats_deliver'] = mst['deliver']
+                fields['message_stats_deliver_rate'] =\
+                    mst['deliver_details']['rate']
+                fields['message_stats_deliver_get'] = mst['deliver_get']
+                fields['message_stats_deliver_get_rate'] =\
+                    mst['deliver_get_details']['rate']
+                fields['message_stats_deliver_no_ack'] = mst['deliver_no_ack']
+                fields['message_stats_deliver_no_ack_rate'] =\
+                    mst['deliver_no_ack_details']['rate']
+                fields['message_stats_publish'] = mst['publish']
+                fields['message_stats_publish_rate'] =\
+                    mst['publish_details']['rate']
+                fields['message_stats_redeliver'] = mst['redeliver']
+                fields['message_stats_redeliver_rate'] =\
+                    mst['redeliver_details']['rate']
+
+                logger.debug('es data: {}'.format(points))
+                yield from agent.async_push(points, db_config['name'])
+            else:
+                logger.warning('cannot get rabbitmq stats: status={}'
+                               .format(res.status))
+        except:
+            logger.exception('cannot get rabbitmq stats')
+    logger.info('get_rmq_global_stats terminated')
+
+
+@asyncio.coroutine
+def get_rmq_nodes_stats(agent):
+    yield from agent.run_event.wait()
+    logger.debug('starting get_rmq_global_stats')
+    config = agent.config['rabbitmq']
+    logger.debug('get_rmq_global_stats config retrieved')
+    db_config = config['database']
+    yield from agent.async_create_database(**db_config)
+    base_url = config['base_url']
+    loop = asyncio.get_event_loop()
+    while agent.run_event.is_set():
+        logger.debug('in while loop')
+        try:
+            yield from asyncio.sleep(config['frequency'])
+            points = []
+            nodes_stats_url = urlparse.urljoin(base_url,
+                                                'api/nodes')
+            res = yield from aiohttp.get(nodes_stats_url)
+
+            if res.status == 200:
+                info = yield from res.json()
+                for node in info:
+                    p = {
+                        'measurement': 'rmq_nodes_stats',
+                        'tags': {
+                            'hostname': node['name'],
+                        },
+                        'fields': {
+                        }
+                    }
+                    fields = p['fields']
+                    fields['fd_total'] = node['fd_total']
+                    fields['fd_used'] = node['fd_used']
+                    fields['mem_limit'] = node['mem_limit']
+                    fields['mem_used'] = node['mem_used']
+                    fields['proc_total'] = node['proc_total']
+                    fields['proc_used'] = node['proc_used']
+                    fields['run_queue'] = node['run_queue']
+                    fields['sockets_total'] = node['sockets_total']
+                    fields['sockets_used'] = node['sockets_used']
+                    fields['disk_free'] = node['disk_free']
+                    fields['disk_free_limit'] = node['disk_free_limit']
+                    points.append(p)
+
+                logger.debug('es data: {}'.format(points))
+                yield from agent.async_push(points, db_config['name'])
+            else:
+                logger.warning('cannot get rabbitmq stats: status={}'
+                               .format(res.status))
+        except:
+            logger.exception('cannot get rabbitmq stats')
+    logger.info('get_rmq_nodes_stats terminated')
+
+
+@asyncio.coroutine
+def get_rmq_queues_stats(agent):
+    yield from agent.run_event.wait()
+    logger.debug('starting get_rmq_global_stats')
+    config = agent.config['rabbitmq']
+    logger.debug('get_rmq_queues_stats config retrieved')
+    db_config = config['database']
+    yield from agent.async_create_database(**db_config)
+    base_url = config['base_url']
 
     while agent.run_event.is_set():
-        yield from asyncio.sleep(config['frequency'])
-        api_url = config['api_url']
-        response = yield from aiohttp.get(api_url, auth=auth)
-        if response.status == 200:
-            data = yield from response.json()
-            for queue_info in data:
-                if queue_info['name'] in monitored_queues:
-                    print(queue_info)
-                    points = [{
-                        'measurement': 'queues',
-                            'tags': {
-                                'name': queue_info['name']
-                            },
-                            'fields': {
-                                'memory': queue_info['memory']
-                            }}]
-                    yield from agent.async_push(points, db_config['name'])
-    logger.info('get_rabbitmq_queues_stats terminated')
+        logger.debug('in while loop')
+        try:
+            yield from asyncio.sleep(config['frequency'])
+            points = []
+            queues_stats_url = urlparse.urljoin(base_url,
+                                                'api/queues')
+            res = yield from aiohttp.get(queues_stats_url)
 
+            if res.status == 200:
+                info = yield from res.json()
+                for queue in info:
+                    p = {
+                        'measurement': 'rmq_queues_stats',
+                        'tags': {
+                            'node': queue['node'],
+                            'queue_name': queue['name'],
+                            'vhost': queue['vhost']
+                        },
+                        'fields': {
+                        }
+                    }
 
-#@asyncio.coroutine
-#def get_memory_usage(agent):
-#    yield from agent.run_event.wait()
-#    config = agent.config['linux']
-#    logger.info('starting "get_memory_usage" task for "%s"',
-#                config['hostname'])
-#    db_config = config['database']
-#    yield from agent.async_create_database(**db_config)
-#
-#    while agent.run_event.is_set():
-#        yield from asyncio.sleep(config['memory_usage_frequency'])
-#        memory = psutil.virtual_memory()
-#        swap = psutil.swap_memory()
-#
-#        points = [{
-#            'measurement': 'memory_usage',
-#            'tags': {
-#                'host': config['hostname'],
-#            },
-#            'fields': {
-#                'v_available': memory.available,
-#                'v_percent': memory.percent,
-#                'v_used': memory.used,
-#                'v_free': memory.free,
-#                's_used': swap.used,
-#                's_free': swap.free,
-#                's_percent': swap.percent
-#            }
-#        }]
-#        logger.debug('{}: memory_usage: memory={}%, swap={}%'.format(
-#                     config['hostname'],
-#                     memory.percent,
-#                     swap.percent))
-#        yield from agent.async_push(points, db_config['name'])
-#    logger.info('get_memory_usage terminated')
-#
-#
-#@asyncio.coroutine
-#def get_disks_io_stats(agent):
-#    yield from agent.run_event.wait()
-#    config = agent.config['linux']
-#    db_config = config['database']
-#
-#    logger.info('starting "get_disks_io_stats" task for "%s"',
-#                config['hostname'])
-#
-#    yield from agent.async_create_database(**db_config)
-#
-#    prev_stats = psutil.disk_io_counters(perdisk=True)
-#
-#    while agent.run_event.is_set():
-#        yield from asyncio.sleep(config['disks_io_stats_frequency'])
-#        curr_stats = psutil.disk_io_counters(perdisk=True)
-#        include_disks = None
-#        if 'include_disks' in config:
-#            include_disks = config['include_disks']
-#        points = []
-#        for disk in curr_stats:
-#            if include_disks and disk not in include_disks:
-#                continue
-#            curr = curr_stats[disk]
-#            prev = prev_stats[disk]
-#            points.append({
-#                'measurement': 'disk_io_stats',
-#                'tags': {
-#                    'host': config['hostname'],
-#                    'disk': disk
-#                },
-#                'fields': {
-#                    'read_count': curr.read_count - prev.read_count,
-#                    'write_count': curr.write_count - prev.write_count,
-#                    'read_bytes': curr.read_bytes - prev.read_bytes,
-#                    'write_bytes': curr.write_bytes - prev.write_bytes,
-#                    'read_time': curr.read_time - prev.read_time,
-#                    'write_time': curr.write_time - prev.write_time,
-#                }
-#            })
-#        yield from agent.async_push(points, db_config['name'])
-#        prev_stats = curr_stats
-#    logger.info('get_disks_io_stats terminated')
-#
-#
-#@asyncio.coroutine
-#def get_disks_usage(agent):
-#    yield from agent.run_event.wait()
-#    config = agent.config['linux']
-#    db_config = config['database']
-#    logger.info('starting "get_disks_usage" task for "%s"',
-#                config['hostname'])
-#
-#    yield from agent.async_create_database(**db_config)
-#
-#    disk_partitions = psutil.disk_partitions()
-#    partition_mountpoint = dict()
-#    partitions = set()
-#    included_partitions = None
-#    if 'include_partitions' in config:
-#        included_partitions = set(config['include_partitions'])
-#
-#    for dp in disk_partitions:
-#        if included_partitions and dp.device not in included_partitions:
-#            continue
-#        partitions.add(dp.device)
-#        partition_mountpoint[dp.device] = dp.mountpoint
-#
-#    while agent.run_event.is_set():
-#        yield from asyncio.sleep(config['disks_usage_frequency'])
-#
-#        points = []
-#        for partition in partitions:
-#            data = psutil.disk_usage(partition_mountpoint[partition])
-#            points.append({
-#                'measurement': 'disks_usage',
-#                'tags': {
-#                    'host': config['hostname'],
-#                    'partition': partition
-#                },
-#                'fields': {
-#                    'total': data.total,
-#                    'used': data.used,
-#                    'free': data.free,
-#                    'percent': data.percent
-#                }
-#            })
-#        yield from agent.async_push(points, db_config['name'])
-#    logger.info('get_disks_usage terminated')
-#
-#
-#@asyncio.coroutine
-#def get_network_usage(agent):
-#    yield from agent.run_event.wait()
-#    config = agent.config['linux']
-#    db_config = config['database']
-#    logger.info('starting "get_disks_usage" task for "%s"',
-#                config['hostname'])
-#
-#    yield from agent.async_create_database(**db_config)
-#
-#    prev_io_counters = psutil.net_io_counters(pernic=True)
-#
-#    while agent.run_event.is_set():
-#        yield from asyncio.sleep(config['network_usage_frequency'])
-#        curr_io_counters = psutil.net_io_counters(pernic=True)
-#        points = []
-#
-#        for interface in curr_io_counters:
-#            curr = curr_io_counters[interface]
-#            prev = prev_io_counters[interface]
-#            data = {
-#                'measurement': 'net_io_stats',
-#                'tags': {
-#                    'host': config['hostname'],
-#                    'interface': interface
-#                },
-#                'fields': {
-#                    'bytes_sent': curr.bytes_sent - prev.bytes_sent,
-#                    'bytes_recv': curr.bytes_recv - prev.bytes_recv,
-#                    'packets_sent': curr.packets_sent - prev.packets_sent,
-#                    'packets_recv': curr.packets_recv - prev.packets_recv,
-#                    'errin': curr.errin - prev.errin,
-#                    'errout': curr.errout - prev.errout,
-#                    'dropin': curr.dropin - prev.dropin,
-#                    'dropout': curr.dropout - prev.dropout
-#                }
-#            }
-#            points.append(data)
-#
-#        yield from agent.async_push(points, db_config['name'])
-#        prev_io_counters = curr_io_counters
-#
-#    logger.info('get_disks_io_stats terminated')
+                    fields = p['fields']
+                    fields['consumers'] = queue['consumers']
+                    fields['memory'] = queue['memory']
+                    fields['messages'] = queue['messages']
+                    fields['messages_ready'] = queue['messages_ready']
+                    fields['messages_unacknowledged'] =\
+                        queue['messages_unacknowledged']
+                    if 'message_stats' in queue:
+                        mst = queue['message_stats']
+                        if 'ack' in mst:
+                            fields['message_stats_ack'] = mst['ack']
+                            fields['message_stats_ack_rate'] =\
+                                mst['ack_details']['rate']
+                        if 'deliver' in mst:
+                            fields['message_stats_deliver'] = mst['deliver']
+                            fields['message_stats_deliver_rate'] =\
+                                mst['deliver_details']['rate']
+                        if 'deliver_get' in mst:
+                            fields['message_stats_deliver_get'] =\
+                                mst['deliver_get']
+                            fields['message_stats_deliver_get_rate'] =\
+                                mst['deliver_get_details']['rate']
+                        if 'publish' in mst:
+                            fields['message_stats_publish'] = mst['publish']
+                            fields['message_stats_publish_rate'] =\
+                                mst['publish_details']['rate']
+                        if 'redeliver' in mst:
+                            fields['message_stats_redeliver'] =\
+                                mst['redeliver']
+                            fields['message_stats_redeliver_rate'] =\
+                                mst['redeliver_details']['rate']
+                        points.append(p)
+
+                logger.debug('es data: {}'.format(points))
+                yield from agent.async_push(points, db_config['name'])
+            else:
+                logger.warning('cannot get rabbitmq stats: status={}'
+                               .format(res.status))
+        except:
+            logger.exception('cannot get rabbitmq stats')
+    logger.info('get_rmq_queues_stats terminated')
